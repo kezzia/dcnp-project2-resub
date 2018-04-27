@@ -63,7 +63,6 @@ int main(int argc, char *argv[]) {
 
 
   // Create the listening socket
-
   if((sock = socket (PF_INET, SOCK_DGRAM, 0)) < 0) {
     fprintf(stderr, "Error creating listening socket.\n");
     exit(EXIT_FAILURE);
@@ -71,7 +70,7 @@ int main(int argc, char *argv[]) {
 
   memset((char*) &myaddr, 0, sizeof(myaddr));
   myaddr.sin_family = AF_INET;
-  myaddr.sin_port = htons(port); //This is my port
+  myaddr.sin_port = htons(port);
   myaddr.sin_addr.s_addr = htonl( INADDR_ANY );
 
   // Bind our socket addresss to the socket
