@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
   struct sockaddr_storage serStorage;        // message to recieve.
   socklen_t serlen, storagelen;    // Server socket length
   int msglen;       // Message length
-  char   *szAddress;       // Holds remote IP address
+  char   *ip_address;       // Holds remote IP address
   char   *szPort;        // Holds remote port
   char   *endptr;        // for strtol()
   int MaxMsgLen = 2000;
@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 
   if(argc == 8)
   {
-    szAddress = argv[1];
+    ip_address = argv[1];
     szPort = argv[2];
     file_path = argv[3];
     format = argv[4];
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
   memset((char*) &myaddr, 0, sizeof(myaddr));
   myaddr.sin_family = AF_INET;
   myaddr.sin_port = htons(port); //This is my port
-  myaddr.sin_addr.s_addr = inet_addr(szAddress); // This is my IP
+  myaddr.sin_addr.s_addr = inet_addr(ip_address); // This is my IP
 
   // Setting the socket length base off of the socket address.
 
