@@ -27,8 +27,8 @@ int main(int argc, char *argv[])
   int sock;        // listening socket
   short int port;         // port number
   struct  sockaddr_in myaddr; // socket address structure for server
-  struct sockaddr_storage serStorage;        // message to recieve.
-  socklen_t serlen, storagelen;    // Server socket length
+  struct sockaddr_storage storage;        // message to recieve.
+  socklen_t sock_len, storagelen;    // Server socket length
   int msglen;       // Message length
   char   *ip_address;       // Holds remote IP address
   char   *szPort;        // Holds remote port
@@ -89,17 +89,14 @@ int main(int argc, char *argv[])
 
   // Setting the socket length base off of the socket address.
 
-  serlen = sizeof(myaddr);
-  storagelen = sizeof(serStorage);
+  sock_len = sizeof(myaddr);
+  storagelen = sizeof(storage);
 
 
   // Send Request to Server Program
 
   while(1)
   {
-    /// Sending the First paramenters to the Server
-    ///Stop and wait protocal being implemented. (won't Run on Widnows)
-    ///Needs To be done on Linux.
 
     char msg[2000];
     sprintf(msg, "%s,%s,%s", file_path,format,target);
@@ -107,17 +104,22 @@ int main(int argc, char *argv[])
 
     /// The line below is a label to jump back to in order to resend the last packet as there was a timeout.
 	RESEND:
-    ///I would use this if on Linux but for functionaltiy it was commented out so I could properly test
-    msglen = lossy_sendto(loss_probability, random_seed, sock, msg, MaxMsgLen, (struct sockaddr *)&myaddr, serlen);
+  int resend_num = 0;
+  if resend_num > 5 {
+    printf("Too many resends\n");
+    return 0;
+  }
+
+    msglen = lossy_sendto(loss_probability, random_seed, sock, msg, MaxMsgLen, (struct sockaddr *)&myaddr, sock_len);
     /// To Recieve Ack from Server
-    ///For stop and wait will be tested on VM of linux hopefully.
     acklen = 1000;
-    int test = custom_recvfrom(sock, ack, acklen, 0, (struct sockaddr *)&serStorage, &storagelen);
+    int test = custom_recvfrom(sock, ack, acklen, 0, (struct sockaddr *)&storage, &storagelen);
     ///This code would take you back to resend the last bit of data due to a timeout
     if(test == -5)
     {
       printf("Packet timedout first message\n");
       goto RESEND;
+      resend_num = resend_num + 1;
     }
     if(test == -4)
     {
@@ -151,14 +153,20 @@ int main(int argc, char *argv[])
 
         /// The line below is a label to jump back to in order to resend the last packet as there was a timeout.
         RESEND1:
+        if resend_num > 5 {
+          printf("Too many resends\n");
+          return 0;
+        }
+
         acklen = 1000;
 
-        test = custom_recvfrom(sock, ack, acklen, 0, (struct sockaddr *)&serStorage, &storagelen);
+        test = custom_recvfrom(sock, ack, acklen, 0, (struct sockaddr *)&storage, &storagelen);
         ///This code would take you back to resend the last bit of data due to a timeout
         if(test == -5)
         {
-          printf("Paket timedout at end of file RESENDING\n\n");
+          printf("Packet timeout\n\n");
           goto RESEND1;
+          resend_num = resend_num + 1;
         }
         if(test == -4)
         {
@@ -176,22 +184,21 @@ int main(int argc, char *argv[])
 
       /// The line below is a label to jump back to in order to resend the last packet as there was a timeout.
       RESEND2:
-      ///I would use this if on Linux but for functionaltiy it was commented out so I could properly test
-      msglen = lossy_sendto(loss_probability, random_seed, sock, mess, maxline, (struct sockaddr *)&myaddr, serlen);
+      if resend_num > 5 {
+        printf("Too many resends\n");
+        return 0;
+      }
 
-      /// This was the part of stop and wait that would recieved acks and do time outs as well.
-      /// Could Not test on windows
-      /// To Recieve Ack from Server
-      ///For stop and wait will be tested on VM of linux hopefully.
-			///Ack Per line of data from file
+      msglen = lossy_sendto(loss_probability, random_seed, sock, mess, maxline, (struct sockaddr *)&myaddr, sock_len);
 
 			test = 0;
-      test = custom_recvfrom(sock, ack, acklen, 0, (struct sockaddr *)&serStorage, &storagelen);
+      test = custom_recvfrom(sock, ack, acklen, 0, (struct sockaddr *)&storage, &storagelen);
       ///This code would take you back to resend the last bit of data due to a timeout
       if(test == -5)
       {
-        printf("Packet timedout on file from data. RESENDING\n\n");
+        printf("Packet timeout\n\n");
         goto RESEND2;
+        resend_num = resend_num + 1;
       }
       if(test == -4)
       {
@@ -206,7 +213,7 @@ int main(int argc, char *argv[])
     char ack[2000];
     MaxMsgLen = 2000;
 		test = 0;
-    test = recvfrom(sock, ack, MaxMsgLen, 0, (struct sockaddr *)&serStorage, &storagelen);
+    test = recvfrom(sock, ack, MaxMsgLen, 0, (struct sockaddr *)&storage, &storagelen);
     if(test < 0 )
       perror("Recieve error");
 
